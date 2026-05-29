@@ -10,7 +10,7 @@ export function PaintSelector({ vehicle }) {
       <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#888] mb-3">
         🎨 Paint Scheme
       </p>
-      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${vehicle.paintOptions.length}, 1fr)` }}>
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         {vehicle.paintOptions.map((opt) => {
           const active = paintScheme === opt.id;
           return (

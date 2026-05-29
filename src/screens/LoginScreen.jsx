@@ -103,6 +103,7 @@ export function LoginScreen() {
                 <h1 className="text-xl font-bold text-white tracking-tight">Sign In</h1>
                 <p className="text-sm text-[#888]">Enter your details to continue</p>
               </div>
+              {/* TODO: REMOVE BEFORE LIVE DEPLOYMENT — test-only bypass */}
               <button
                 onClick={() => setSkipForm((v) => !v)}
                 className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-1 transition-all duration-150 cursor-pointer"
