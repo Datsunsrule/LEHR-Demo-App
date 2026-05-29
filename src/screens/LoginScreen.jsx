@@ -167,20 +167,45 @@ export function LoginScreen() {
             </div>
           </GlassCard>
 
-          {/* QR code */}
-          <div className="flex flex-col items-center gap-2">
-            <a href="https://www.lehr.com" target="_blank" rel="noreferrer" className="block hover:opacity-70 transition-opacity duration-200">
-              <QRCodeSVG
-                value="https://www.lehr.com"
-                size={100}
-                bgColor="transparent"
-                fgColor="#ffffff"
-                level="M"
+          {/* QR code + speech bubble */}
+          <div className="flex items-start justify-center gap-3 w-full">
+
+            {/* speech bubble */}
+            <div className="relative max-w-[200px] mt-2">
+              <div
+                className="rounded-2xl px-3 py-2.5 text-[11px] leading-relaxed font-medium text-black"
+                style={{ background: '#FFE234', boxShadow: '0 4px 14px rgba(255,226,52,0.35)' }}
+              >
+                This QR code can link to the website, replicate the Sign In form so customers can fill it out as they keep walking, or link your sales rep's contact info for easy saving to their phone.
+              </div>
+              {/* tail pointing right toward QR code */}
+              <div
+                className="absolute top-4 -right-2"
+                style={{
+                  width: 0, height: 0,
+                  borderTop: '7px solid transparent',
+                  borderBottom: '7px solid transparent',
+                  borderLeft: '10px solid #FFE234',
+                }}
               />
-            </a>
-            <p className="text-[10px] font-bold tracking-[0.15em] uppercase" style={{ color: 'rgba(255,255,255,0.35)' }}>
-              www.lehr.com
-            </p>
+            </div>
+
+            {/* QR code */}
+            <div className="flex flex-col items-center gap-1 flex-shrink-0">
+              <a href="https://www.lehr.com" target="_blank" rel="noreferrer" className="block hover:opacity-70 transition-opacity duration-200">
+                <QRCodeSVG
+                  value="https://www.lehr.com"
+                  size={90}
+                  bgColor="transparent"
+                  fgColor="#ffffff"
+                  level="M"
+                />
+              </a>
+              <p className="text-[10px] font-bold tracking-[0.15em] uppercase" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                www.lehr.com
+              </p>
+            </div>
+
           </div>
 
         </div>
