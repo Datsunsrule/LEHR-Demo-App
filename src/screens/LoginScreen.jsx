@@ -163,9 +163,6 @@ export function LoginScreen() {
                 <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#444]">Secure Access</span>
                 <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
               </div>
-              <p className="text-[10px] text-center text-[#444] leading-relaxed">
-                Your information is used solely for this demo session and pricing estimate.
-              </p>
             </div>
           </GlassCard>
 
