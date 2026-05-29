@@ -14,6 +14,7 @@ import { formatPhone } from '../hooks/useFormValidation';
 export function LoginScreen() {
   const navigate      = useNavigate();
   const [adminOpen, setAdminOpen] = useState(false);
+  const [skipForm, setSkipForm]   = useState(false);
 
   const user          = useStore((s) => s.user);
   const setUserField  = useStore((s) => s.setUserField);
@@ -23,9 +24,10 @@ export function LoginScreen() {
   const addLead       = useStore((s) => s.addLead);
   const clearUser     = useStore((s) => s.clearUser);
 
-  useEffect(() => { clearUser(); }, []);
+  useEffect(() => { clearUser(); setSkipForm(false); }, []);
 
   const canContinue =
+    skipForm ||
     user.name.length > 0 ||
     user.agency.length > 0 ||
     user.phone.length > 0 ||
@@ -91,9 +93,25 @@ export function LoginScreen() {
 
           {/* form card */}
           <GlassCard className="w-full px-6 py-6 flex flex-col gap-5">
-            <div className="flex flex-col gap-1">
-              <h1 className="text-xl font-bold text-white tracking-tight">Sign In</h1>
-              <p className="text-sm text-[#888]">Enter your details to continue</p>
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col gap-1">
+                <h1 className="text-xl font-bold text-white tracking-tight">Sign In</h1>
+                <p className="text-sm text-[#888]">Enter your details to continue</p>
+              </div>
+              <button
+                onClick={() => setSkipForm((v) => !v)}
+                className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-1 transition-all duration-150 cursor-pointer"
+                style={{
+                  background: skipForm ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)',
+                  border: skipForm ? '1px solid rgba(255,255,255,0.25)' : '1px solid rgba(255,255,255,0.1)',
+                }}
+              >
+                {skipForm && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 3.5L3.5 6.5L9 1" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </button>
             </div>
 
             <div className="flex flex-col gap-4">
