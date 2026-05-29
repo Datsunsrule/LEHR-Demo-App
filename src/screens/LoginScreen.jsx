@@ -34,8 +34,13 @@ export function LoginScreen() {
     user.email.length > 0;
 
   function handleContinue() {
+    const hasData = user.name || user.agency || user.phone || user.email;
+    // if skipping with no data, set guest so route guard passes
+    if (skipForm && !hasData) {
+      setUserField('name', 'Guest');
+    }
     addLead({
-      name:     user.name,
+      name:     hasData ? user.name : 'Guest',
       agency:   user.agency,
       phone:    user.phone,
       email:    user.email,
