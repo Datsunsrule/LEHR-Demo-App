@@ -3,7 +3,7 @@ const base = import.meta.env.BASE_URL;
 export function LehrLogo({ width = 120, className = '' }) {
   return (
     <img
-      src={`${base}assets/lehr-logo.png`}
+      src={`${base}assets/Genericlogo.jpg`}
       alt="LEHR Auto Electric"
       width={width}
       className={className}
