@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, Settings } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useStore } from '../store/useStore';
-import { BackgroundLayer } from '../components/BackgroundLayer';
 import { LehrLogo } from '../components/LehrLogo';
 import { GlassCard } from '../components/GlassCard';
 import { InputField } from '../components/InputField';
 import { ChromeButton } from '../components/ChromeButton';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { LeadCaptureToggle } from '../components/LeadCaptureToggle';
 import { AdminPanel } from '../components/AdminPanel';
 import { formatPhone } from '../hooks/useFormValidation';
 
-export function LoginScreen() {
+export function LeadCaptureScreen() {
   const navigate      = useNavigate();
   const [adminOpen, setAdminOpen] = useState(false);
   const [skipForm, setSkipForm]   = useState(false);
@@ -22,9 +23,16 @@ export function LoginScreen() {
   const salesAgent    = useStore((s) => s.salesAgent);
 
   const addLead       = useStore((s) => s.addLead);
-  const clearUser     = useStore((s) => s.clearUser);
 
-  useEffect(() => { clearUser(); setSkipForm(false); }, []);
+  // Each visit to the lead-capture screen starts a fresh kiosk session. Wipe the
+  // previous customer's PII and build config so nothing carries over to the
+  // next walk-up. Actions are read via getState() to keep this a one-time,
+  // dependency-free mount effect; both resets are idempotent under StrictMode.
+  useEffect(() => {
+    const { clearUser, resetBuild } = useStore.getState();
+    clearUser();
+    resetBuild();
+  }, []);
 
   const canContinue =
     skipForm ||
@@ -35,12 +43,12 @@ export function LoginScreen() {
 
   function handleContinue() {
     const hasData = user.name || user.agency || user.phone || user.email;
-    // if skipping with no data, set guest so route guard passes
-    if (skipForm && !hasData) {
-      setUserField('name', 'Guest');
-    }
+    const name = hasData ? user.name : 'Guest';
+    // Guarantee a populated user before navigating so RequireUser passes — don't
+    // depend on the order of the addLead/navigate calls below.
+    if (!hasData) setUserField('name', 'Guest');
     addLead({
-      name:     hasData ? user.name : 'Guest',
+      name,
       agency:   user.agency,
       phone:    user.phone,
       email:    user.email,
@@ -52,32 +60,35 @@ export function LoginScreen() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <BackgroundLayer src="/assets/lehr-background.jpg" />
-
       {/* sticky admin bar */}
       <div
         className="sticky top-0 z-40 flex items-center justify-between px-4 py-2.5"
-        style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+        style={{ background: 'var(--header-bg)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(var(--ink),0.07)' }}
       >
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <MapPin size={13} className="text-[#aaa]" />
-            <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#aaa]">Demo Location</span>
-            <span className="text-[11px] text-white ml-1">{demoLocation}</span>
+            <MapPin size={13} className="text-[var(--text-2)]" />
+            <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-2)]">Demo Location</span>
+            <span className="text-[11px] text-[var(--text)] ml-1">{demoLocation}</span>
           </div>
-          <div className="w-px h-3" style={{ background: 'rgba(255,255,255,0.15)' }} />
+          <div className="w-px h-3" style={{ background: 'rgba(var(--ink),0.15)' }} />
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#aaa]">Rep</span>
-            <span className="text-[13px] font-bold uppercase text-white" style={{ fontFamily: 'ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace', letterSpacing: '0.12em' }}>{salesAgent}</span>
+            <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-2)]">Rep</span>
+            <span className="text-[13px] font-bold uppercase text-[var(--text)]" style={{ fontFamily: 'ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace', letterSpacing: '0.12em' }}>{salesAgent}</span>
           </div>
         </div>
-        <button
-          onClick={() => setAdminOpen(true)}
-          className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
-        >
-          <Settings size={15} className="text-[#888]" />
-        </button>
+        <div className="flex items-center gap-2">
+          <LeadCaptureToggle />
+          <ThemeToggle />
+          <button
+            onClick={() => setAdminOpen(true)}
+            aria-label="Open admin panel"
+            className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+            style={{ background: 'rgba(var(--ink),0.07)', border: '1px solid rgba(var(--ink),0.1)' }}
+          >
+            <Settings size={15} className="text-[var(--text-dim)]" aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
       {/* center content */}
@@ -90,7 +101,7 @@ export function LoginScreen() {
             </a>
             <p
               className="text-[10px] font-bold tracking-[0.25em] uppercase"
-              style={{ color: 'rgba(255,255,255,0.5)' }}
+              style={{ color: 'rgba(var(--ink),0.7)' }}
             >
               Emergency Vehicle Outfitting
             </p>
@@ -100,21 +111,24 @@ export function LoginScreen() {
           <GlassCard className="w-full px-6 py-6 flex flex-col gap-5">
             <div className="flex items-start justify-between">
               <div className="flex flex-col gap-1">
-                <h1 className="text-xl font-bold text-white tracking-tight">Sign In</h1>
-                <p className="text-sm text-[#888]">Enter your details to continue</p>
+                <h1 className="text-xl font-bold text-[var(--text)] tracking-tight">Let's Get Started</h1>
+                <p className="text-sm text-[var(--text-dim)]">Share your details and we'll tailor your build</p>
               </div>
               {/* TODO: REMOVE BEFORE LIVE DEPLOYMENT — test-only bypass */}
               <button
                 onClick={() => setSkipForm((v) => !v)}
-                className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-1 transition-all duration-150 cursor-pointer"
+                role="checkbox"
+                aria-checked={skipForm}
+                aria-label="Skip sign-in form (test only)"
+                className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 mt-1 transition-all duration-150 cursor-pointer"
                 style={{
-                  background: skipForm ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)',
-                  border: skipForm ? '1px solid rgba(255,255,255,0.25)' : '1px solid rgba(255,255,255,0.1)',
+                  background: skipForm ? 'rgba(var(--ink),0.12)' : 'rgba(var(--ink),0.04)',
+                  border: skipForm ? '1px solid rgba(var(--ink),0.25)' : '1px solid rgba(var(--ink),0.1)',
                 }}
               >
                 {skipForm && (
-                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                    <path d="M1 3.5L3.5 6.5L9 1" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none" aria-hidden="true">
+                    <path d="M1 3.5L3.5 6.5L9 1" stroke="rgba(var(--ink),0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
               </button>
@@ -153,16 +167,16 @@ export function LoginScreen() {
               <ChromeButton onClick={handleContinue} disabled={!canContinue}>
                 Continue to Build Bay
               </ChromeButton>
-              <p className="text-[9px] text-center leading-relaxed" style={{ color: 'rgba(255,255,255,0.28)' }}>
+              <p className="text-[9px] text-center leading-relaxed" style={{ color: 'rgba(var(--ink),0.7)' }}>
                 By continuing, I consent to sharing the information entered above with LEHR Upfitters Opco, LLC
               </p>
             </div>
 
             <div className="flex flex-col items-center gap-2">
               <div className="flex items-center gap-3 w-full">
-                <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#444]">Secure Access</span>
-                <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                <div className="flex-1 h-px" style={{ background: 'rgba(var(--ink),0.08)' }} />
+                <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">Secure Access</span>
+                <div className="flex-1 h-px" style={{ background: 'rgba(var(--ink),0.08)' }} />
               </div>
             </div>
           </GlassCard>
@@ -173,10 +187,10 @@ export function LoginScreen() {
             {/* speech bubble */}
             <div className="relative max-w-[200px] mt-2">
               <div
-                className="rounded-2xl px-3 py-2.5 text-[11px] leading-relaxed font-medium text-black"
-                style={{ background: '#FFE234', boxShadow: '0 4px 14px rgba(255,226,52,0.35)' }}
+                className="rounded-2xl px-3.5 py-2.5 text-[11px] leading-relaxed font-semibold text-white"
+                style={{ background: '#E32636', boxShadow: '0 4px 16px rgba(227,38,54,0.4)' }}
               >
-                This QR code can link to the website, replicate the Sign In form so customers can fill it out as they keep walking, or link your sales rep's contact info for easy saving to their phone.
+                Review on the go — just scan with your phone to explore LEHR anytime.
               </div>
               {/* tail pointing right toward QR code */}
               <div
@@ -185,7 +199,7 @@ export function LoginScreen() {
                   width: 0, height: 0,
                   borderTop: '7px solid transparent',
                   borderBottom: '7px solid transparent',
-                  borderLeft: '10px solid #FFE234',
+                  borderLeft: '10px solid #E32636',
                 }}
               />
             </div>
@@ -201,7 +215,7 @@ export function LoginScreen() {
                   level="M"
                 />
               </a>
-              <p className="text-[10px] font-bold tracking-[0.15em] uppercase" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              <p className="text-[10px] font-bold tracking-[0.15em] uppercase" style={{ color: 'rgba(var(--ink),0.7)' }}>
                 www.lehr.com
               </p>
             </div>

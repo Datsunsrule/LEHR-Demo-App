@@ -7,7 +7,7 @@ export function EquipmentOverlay({ overlay }) {
         top:            `${overlay.top}%`,
         width:          `${overlay.width}%`,
         height:         `${overlay.height}%`,
-        background:     'rgba(180, 180, 185, 0.55)',
+        background:     'rgba(22, 25, 32, 0.62)',
         border:         '1px solid rgba(255, 255, 255, 0.6)',
         boxShadow:      '0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
         backdropFilter: 'blur(2px)',
