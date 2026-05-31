@@ -86,7 +86,7 @@ export function LoginScreen() {
           {/* logo */}
           <div className="flex flex-col items-center gap-2">
             <a href="https://www.lehr.com" target="_blank" rel="noreferrer">
-              <LehrLogo width={300} className="hover:opacity-80 transition-opacity duration-200" />
+              <LehrLogo width={360} className="hover:opacity-80 transition-opacity duration-200" />
             </a>
             <p
               className="text-[10px] font-bold tracking-[0.25em] uppercase"
