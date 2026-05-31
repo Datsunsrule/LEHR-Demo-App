@@ -89,8 +89,5 @@ export const equipment = [
   { id: 'wire_harness',         label: 'LEHR Custom Wire Harness',                             icon: Package, price: 380, category: 'Electrical' },
 ];
 
-export const getCategories = () =>
-  equipment.reduce((acc, e) => {
-    if (!acc.includes(e.category)) acc.push(e.category);
-    return acc;
-  }, []);
+// Computed once at module load — category order follows first appearance.
+export const categories = [...new Set(equipment.map((e) => e.category))];

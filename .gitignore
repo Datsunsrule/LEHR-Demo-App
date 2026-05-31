@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local tooling config
+.claude
+
+# Source-only background originals (optimized WebPs ship in public/assets)
+image-originals

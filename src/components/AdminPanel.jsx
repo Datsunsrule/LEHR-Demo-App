@@ -1,31 +1,46 @@
-import { useState } from 'react';
-import { X, MapPin, User, Sun, Moon, Trash2, Plus, Check } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, MapPin, User, Trash2, Plus, Check } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { LocationInput } from './LocationInput';
 import { LeadsTab } from './LeadsTab';
 
 export function AdminPanel({ onClose }) {
   const [tab, setTab]           = useState('locations');
-  const [newLocation, setNewLocation] = useState('');
-  const [newRep, setNewRep]     = useState('');
+  const dialogRef               = useRef(null);
+
+  // Close on Escape and move focus into the dialog when it opens (WCAG 2.1.2 /
+  // 2.4.3). Full focus-trap is out of scope; backdrop click and Done also close.
+  useEffect(() => {
+    dialogRef.current?.focus();
+    function onKeyDown(e) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
 
   const locations     = useStore((s) => s.locations);
   const reps          = useStore((s) => s.reps);
   const demoLocation  = useStore((s) => s.demoLocation);
   const salesAgent    = useStore((s) => s.salesAgent);
-  const theme         = useStore((s) => s.theme);
   const setDemoLocation = useStore((s) => s.setDemoLocation);
   const setSalesAgent   = useStore((s) => s.setSalesAgent);
-  const setTheme        = useStore((s) => s.setTheme);
   const addLocation     = useStore((s) => s.addLocation);
   const removeLocation  = useStore((s) => s.removeLocation);
   const addRep          = useStore((s) => s.addRep);
   const removeRep       = useStore((s) => s.removeRep);
+
+  const showPrices       = useStore((s) => s.showPrices);
+  const showTotals       = useStore((s) => s.showTotals);
+  const toggleShowPrices = useStore((s) => s.toggleShowPrices);
+  const toggleShowTotals = useStore((s) => s.toggleShowTotals);
 
   const leads = useStore((s) => s.leads);
 
   const tabs = [
     { id: 'locations', label: 'Locations' },
     { id: 'reps',      label: 'Sales Reps' },
+    { id: 'pricing',   label: 'Pricing' },
     { id: 'leads',     label: `Leads${leads.length ? ` (${leads.length})` : ''}` },
   ];
 
@@ -38,10 +53,15 @@ export function AdminPanel({ onClose }) {
     >
       {/* modal */}
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="admin-panel-title"
+        tabIndex={-1}
         className="w-full max-w-md rounded-2xl overflow-hidden"
         style={{
-          background: '#111',
-          border: '1px solid rgba(255,255,255,0.12)',
+          background: 'var(--card-solid)',
+          border: '1px solid rgba(var(--ink),0.12)',
           boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
           maxHeight: '85vh',
           display: 'flex',
@@ -50,10 +70,10 @@ export function AdminPanel({ onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* header */}
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          <h2 className="text-base font-bold text-white">Admin Panel</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer" style={{ background: 'rgba(255,255,255,0.08)' }}>
-            <X size={16} className="text-white" />
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(var(--ink),0.08)' }}>
+          <h2 id="admin-panel-title" className="text-base font-bold text-[var(--text)]">Admin Panel</h2>
+          <button onClick={onClose} aria-label="Close admin panel" className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer" style={{ background: 'rgba(var(--ink),0.08)' }}>
+            <X size={16} className="text-[var(--text)]" aria-hidden="true" />
           </button>
         </div>
 
@@ -65,10 +85,10 @@ export function AdminPanel({ onClose }) {
               onClick={() => setTab(t.id)}
               className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors duration-100 cursor-pointer"
               style={{
-                background: tab === t.id ? 'rgba(255,255,255,0.12)' : 'transparent',
-                color: tab === t.id ? '#fff' : '#666',
+                background: tab === t.id ? 'rgba(var(--ink),0.12)' : 'transparent',
+                color: tab === t.id ? 'var(--text)' : 'var(--text-dim)',
                 border: '1px solid',
-                borderColor: tab === t.id ? 'rgba(255,255,255,0.2)' : 'transparent',
+                borderColor: tab === t.id ? 'rgba(var(--ink),0.2)' : 'transparent',
               }}
             >
               {t.label}
@@ -84,14 +104,7 @@ export function AdminPanel({ onClose }) {
               active={demoLocation}
               onSelect={setDemoLocation}
               onRemove={removeLocation}
-              newValue={newLocation}
-              setNewValue={setNewLocation}
-              onAdd={() => {
-                if (newLocation.trim()) {
-                  addLocation(newLocation.trim());
-                  setNewLocation('');
-                }
-              }}
+              onAdd={addLocation}
             />
           )}
           {tab === 'reps' && (
@@ -100,25 +113,26 @@ export function AdminPanel({ onClose }) {
               active={salesAgent}
               onSelect={setSalesAgent}
               onRemove={removeRep}
-              newValue={newRep}
-              setNewValue={setNewRep}
-              onAdd={() => {
-                if (newRep.trim()) {
-                  addRep(newRep.trim());
-                  setNewRep('');
-                }
-              }}
+              onAdd={addRep}
+            />
+          )}
+          {tab === 'pricing' && (
+            <PricingTab
+              showPrices={showPrices}
+              showTotals={showTotals}
+              onTogglePrices={toggleShowPrices}
+              onToggleTotals={toggleShowTotals}
             />
           )}
           {tab === 'leads' && <LeadsTab />}
         </div>
 
         {/* footer */}
-        <div className="px-5 py-4 flex justify-end" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="px-5 py-4 flex justify-end" style={{ borderTop: '1px solid rgba(var(--ink),0.08)' }}>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-lg text-sm font-semibold text-white cursor-pointer transition-colors"
-            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}
+            className="px-5 py-2 rounded-lg text-sm font-semibold text-[var(--text)] cursor-pointer transition-colors"
+            style={{ background: 'rgba(var(--ink),0.1)', border: '1px solid rgba(var(--ink),0.15)' }}
           >
             Done
           </button>
@@ -128,71 +142,60 @@ export function AdminPanel({ onClose }) {
   );
 }
 
-function LocationsTab({ locations, active, onSelect, onRemove, newValue, setNewValue, onAdd }) {
+function LocationsTab({ locations, active, onSelect, onRemove, onAdd }) {
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#666]">Active Demo Location</p>
+      <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">Active Demo Location</p>
       <div className="flex flex-col gap-1">
         {locations.map((loc) => (
           <div
             key={loc}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
-            style={{ background: loc === active ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+            style={{ background: loc === active ? 'rgba(var(--ink),0.08)' : 'rgba(var(--ink),0.03)', border: '1px solid rgba(var(--ink),0.06)' }}
           >
-            <MapPin size={14} className="text-[#666] flex-shrink-0" />
-            <button className="flex-1 text-left text-sm text-white cursor-pointer" onClick={() => onSelect(loc)}>{loc}</button>
+            <MapPin size={14} className="text-[var(--text-muted)] flex-shrink-0" aria-hidden="true" />
+            <button className="flex-1 text-left text-sm text-[var(--text)] cursor-pointer" onClick={() => onSelect(loc)} aria-pressed={loc === active}>{loc}</button>
             {loc === active ? (
-              <Check size={14} className="text-white flex-shrink-0" />
+              <Check size={14} className="text-[var(--text)] flex-shrink-0" aria-hidden="true" />
             ) : (
               locations.length > 1 && (
-                <button onClick={() => onRemove(loc)} className="cursor-pointer opacity-40 hover:opacity-100 transition-opacity">
-                  <Trash2 size={14} className="text-[#E32636]" />
+                <button onClick={() => onRemove(loc)} aria-label={`Remove location: ${loc}`} className="w-6 h-6 flex items-center justify-center flex-shrink-0 cursor-pointer opacity-40 hover:opacity-100 transition-opacity">
+                  <Trash2 size={14} className="text-[#E32636]" aria-hidden="true" />
                 </button>
               )
             )}
           </div>
         ))}
       </div>
-      <div className="flex gap-2">
-        <input
-          value={newValue}
-          onChange={(e) => setNewValue(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onAdd()}
-          placeholder="Add location…"
-          className="flex-1 px-3 py-2 rounded-lg text-sm text-white placeholder-[#444] outline-none"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
-        />
-        <button
-          onClick={onAdd}
-          className="px-3 py-2 rounded-lg cursor-pointer transition-colors"
-          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}
-        >
-          <Plus size={16} className="text-white" />
-        </button>
-      </div>
+      <LocationInput existing={locations} onAdd={onAdd} />
     </div>
   );
 }
 
-function RepsTab({ reps, active, onSelect, onRemove, newValue, setNewValue, onAdd }) {
+function RepsTab({ reps, active, onSelect, onRemove, onAdd }) {
+  const [newValue, setNewValue] = useState('');
+  const submit = () => {
+    const v = newValue.trim();
+    if (v) { onAdd(v); setNewValue(''); }
+  };
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#666]">Sales Representatives</p>
+      <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">Sales Representatives</p>
       <div className="flex flex-col gap-1">
         {reps.map((rep) => (
           <div
             key={rep}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
-            style={{ background: rep === active ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+            style={{ background: rep === active ? 'rgba(var(--ink),0.08)' : 'rgba(var(--ink),0.03)', border: '1px solid rgba(var(--ink),0.06)' }}
           >
-            <User size={14} className="text-[#666] flex-shrink-0" />
-            <button className="flex-1 text-left text-sm text-white cursor-pointer" onClick={() => onSelect(rep)}>{rep}</button>
+            <User size={14} className="text-[var(--text-muted)] flex-shrink-0" aria-hidden="true" />
+            <button className="flex-1 text-left text-sm text-[var(--text)] cursor-pointer" onClick={() => onSelect(rep)} aria-pressed={rep === active}>{rep}</button>
             {rep === active ? (
-              <Check size={14} className="text-white flex-shrink-0" />
+              <Check size={14} className="text-[var(--text)] flex-shrink-0" aria-hidden="true" />
             ) : (
               reps.length > 1 && (
-                <button onClick={() => onRemove(rep)} className="cursor-pointer opacity-40 hover:opacity-100 transition-opacity">
-                  <Trash2 size={14} className="text-[#E32636]" />
+                <button onClick={() => onRemove(rep)} aria-label={`Remove rep: ${rep}`} className="w-6 h-6 flex items-center justify-center flex-shrink-0 cursor-pointer opacity-40 hover:opacity-100 transition-opacity">
+                  <Trash2 size={14} className="text-[#E32636]" aria-hidden="true" />
                 </button>
               )
             )}
@@ -203,53 +206,74 @@ function RepsTab({ reps, active, onSelect, onRemove, newValue, setNewValue, onAd
         <input
           value={newValue}
           onChange={(e) => setNewValue(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onAdd()}
+          onKeyDown={(e) => e.key === 'Enter' && submit()}
           placeholder="Add rep…"
-          className="flex-1 px-3 py-2 rounded-lg text-sm text-white placeholder-[#444] outline-none"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+          aria-label="Add sales rep"
+          className="flex-1 px-3 py-2 rounded-lg text-sm text-[var(--text)] placeholder-[var(--text-muted)] outline-none"
+          style={{ background: 'rgba(var(--ink),0.06)', border: '1px solid rgba(var(--ink),0.1)' }}
         />
         <button
-          onClick={onAdd}
+          onClick={submit}
+          aria-label="Add sales rep"
           className="px-3 py-2 rounded-lg cursor-pointer transition-colors"
-          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}
+          style={{ background: 'rgba(var(--ink),0.1)', border: '1px solid rgba(var(--ink),0.15)' }}
         >
-          <Plus size={16} className="text-white" />
+          <Plus size={16} className="text-[var(--text)]" aria-hidden="true" />
         </button>
       </div>
     </div>
   );
 }
 
-function AppearanceTab({ theme, setTheme }) {
+function PricingTab({ showPrices, showTotals, onTogglePrices, onToggleTotals }) {
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#666]">Theme</p>
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          { id: 'dark',  Icon: Moon, label: 'Dark' },
-          { id: 'light', Icon: Sun,  label: 'Light' },
-        ].map(({ id, Icon, label }) => (
-          <button
-            key={id}
-            onClick={() => setTheme(id)}
-            className="flex flex-col items-center gap-2 py-4 rounded-xl cursor-pointer transition-all"
-            style={{
-              background: theme === id ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.03)',
-              border: theme === id ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(255,255,255,0.08)',
-            }}
-          >
-            <Icon size={20} className="text-white" />
-            <span className="text-sm font-semibold text-white">{label}</span>
-          </button>
-        ))}
+      <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">Pricing Display</p>
+      <div className="flex flex-col gap-2">
+        <ToggleRow
+          label="Show item prices"
+          desc="Per-item prices in the catalog and estimate"
+          checked={showPrices}
+          onChange={onTogglePrices}
+        />
+        <ToggleRow
+          label="Show cost totals"
+          desc="Running total in the build footer and the estimate summary"
+          checked={showTotals}
+          onChange={onToggleTotals}
+        />
       </div>
-      <div
-        className="rounded-xl px-4 py-3 text-xs leading-relaxed text-[#aaa]"
-        style={{ background: 'rgba(255, 170, 0, 0.08)', border: '1px solid rgba(255, 170, 0, 0.25)' }}
+      <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+        Turn both off to present the build as a spec sheet with no pricing.
+      </p>
+    </div>
+  );
+}
+
+function ToggleRow({ label, desc, checked, onChange }) {
+  return (
+    <div
+      className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg"
+      style={{ background: 'rgba(var(--ink),0.03)', border: '1px solid rgba(var(--ink),0.06)' }}
+    >
+      <div className="min-w-0">
+        <p className="text-sm text-[var(--text)]">{label}</p>
+        <p className="text-[11px] text-[var(--text-muted)]">{desc}</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        onClick={onChange}
+        className="relative w-11 h-6 rounded-full flex-shrink-0 cursor-pointer transition-colors"
+        style={{ background: checked ? '#E32636' : 'rgba(var(--ink),0.2)' }}
       >
-        <span className="font-bold text-amber-400">Note: </span>
-        Light-mode theming requires wiring color tokens across every screen. Toggle here will persist the selection — implement the theme system in this project.
-      </div>
+        <span
+          className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all duration-150"
+          style={{ left: checked ? '22px' : '2px' }}
+        />
+      </button>
     </div>
   );
 }

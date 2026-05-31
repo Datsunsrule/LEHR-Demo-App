@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, Share2, Trash2, Pencil, Check, X, AlertTriangle } from 'lucide-react';
+import { Download, Trash2, Pencil, Check, X, AlertTriangle } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 function fmtDate(iso) {
@@ -10,13 +10,22 @@ function fmtDate(iso) {
   });
 }
 
+function escapeCsv(value) {
+  const cell = String(value ?? '');
+  // Neutralize spreadsheet formula injection: a cell starting with =, +, -, @,
+  // tab, or CR can be executed as a formula when opened in Excel/Sheets. Prefix
+  // with a single quote so it's treated as literal text.
+  const safe = /^[=+\-@\t\r]/.test(cell) ? `'${cell}` : cell;
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+
 function buildCsv(leads) {
   const headers = ['Name', 'Agency', 'Phone', 'Email', 'Location', 'Sales Rep', 'Captured At'];
   const rows = leads.map((l) => [
     l.name, l.agency, l.phone, l.email, l.location, l.agent, fmtDate(l.capturedAt),
   ]);
   return [headers, ...rows]
-    .map((r) => r.map((cell) => `"${(cell ?? '').replace(/"/g, '""')}"`).join(','))
+    .map((r) => r.map(escapeCsv).join(','))
     .join('\n');
 }
 
@@ -33,20 +42,6 @@ function downloadCsv(leads) {
   document.body.removeChild(a);
 }
 
-async function shareLeads(leads) {
-  const csv = buildCsv(leads);
-  if (navigator.share) {
-    const file = new File([csv], `lehr-leads-${new Date().toISOString().slice(0, 10)}.csv`, { type: 'text/csv' });
-    try {
-      await navigator.share({ files: [file], title: 'LEHR Leads', text: `${leads.length} leads captured` });
-      return;
-    } catch {}
-  }
-  // fallback: copy to clipboard
-  await navigator.clipboard.writeText(csv);
-  return 'copied';
-}
-
 export function LeadsTab() {
   const leads      = useStore((s) => s.leads);
   const updateLead = useStore((s) => s.updateLead);
@@ -55,7 +50,6 @@ export function LeadsTab() {
 
   const [editingId, setEditingId]   = useState(null);
   const [editFields, setEditFields] = useState({});
-  const [shareMsg, setShareMsg]     = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
 
   function startEdit(lead) {
@@ -68,20 +62,12 @@ export function LeadsTab() {
     setEditingId(null);
   }
 
-  async function handleShare() {
-    const result = await shareLeads(leads);
-    if (result === 'copied') {
-      setShareMsg('Copied to clipboard');
-      setTimeout(() => setShareMsg(''), 2500);
-    }
-  }
-
   if (leads.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3">
         <p className="text-3xl">📋</p>
-        <p className="text-sm font-semibold text-white">No leads yet</p>
-        <p className="text-xs text-[#555] text-center">Leads are captured automatically when someone signs in on the login screen.</p>
+        <p className="text-sm font-semibold text-[var(--text)]">No leads yet</p>
+        <p className="text-xs text-[var(--text-muted)] text-center">Leads are captured automatically when someone fills out the lead-capture form.</p>
       </div>
     );
   }
@@ -90,23 +76,13 @@ export function LeadsTab() {
     <div className="flex flex-col gap-4">
       {/* toolbar */}
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#666]">
+        <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--text-muted)]">
           {leads.length} lead{leads.length !== 1 ? 's' : ''}
         </p>
         <div className="flex items-center gap-2">
-          {shareMsg && (
-            <span className="text-[10px] text-[#aaa]">{shareMsg}</span>
-          )}
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-colors text-xs font-semibold text-white"
-            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}
-          >
-            <Share2 size={12} /> Share
-          </button>
           <button
             onClick={() => downloadCsv(leads)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-colors text-xs font-semibold text-white"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-colors text-xs font-semibold text-[var(--text)]"
             style={{ background: 'rgba(30,123,217,0.2)', border: '1px solid rgba(30,123,217,0.4)' }}
           >
             <Download size={12} /> Export CSV
@@ -120,7 +96,7 @@ export function LeadsTab() {
           <div
             key={lead.id}
             className="rounded-xl overflow-hidden"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+            style={{ background: 'rgba(var(--ink),0.03)', border: '1px solid rgba(var(--ink),0.07)' }}
           >
             {editingId === lead.id ? (
               /* edit mode */
@@ -132,26 +108,28 @@ export function LeadsTab() {
                   { key: 'email',  label: 'Email' },
                 ].map(({ key, label }) => (
                   <div key={key} className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase tracking-wider text-[#555] w-12 flex-shrink-0">{label}</span>
+                    <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] w-12 flex-shrink-0">{label}</span>
                     <input
                       value={editFields[key] || ''}
                       onChange={(e) => setEditFields((f) => ({ ...f, [key]: e.target.value }))}
-                      className="flex-1 px-2 py-1 rounded-lg text-xs text-white outline-none"
-                      style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}
+                      aria-label={label}
+                      className="flex-1 px-2 py-1 rounded-lg text-xs text-[var(--text)] outline-none"
+                      style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.15)' }}
                     />
                   </div>
                 ))}
                 <div className="flex justify-end gap-2 mt-1">
                   <button
                     onClick={() => setEditingId(null)}
-                    className="px-3 py-1 rounded-lg text-xs text-[#888] cursor-pointer"
-                    style={{ background: 'rgba(255,255,255,0.05)' }}
+                    aria-label="Cancel edit"
+                    className="px-3 py-1 rounded-lg text-xs text-[var(--text-dim)] cursor-pointer"
+                    style={{ background: 'rgba(var(--ink),0.05)' }}
                   >
-                    <X size={12} />
+                    <X size={12} aria-hidden="true" />
                   </button>
                   <button
                     onClick={saveEdit}
-                    className="px-3 py-1 rounded-lg text-xs text-white cursor-pointer flex items-center gap-1"
+                    className="px-3 py-1 rounded-lg text-xs text-[var(--text)] cursor-pointer flex items-center gap-1"
                     style={{ background: 'rgba(30,123,217,0.3)', border: '1px solid rgba(30,123,217,0.4)' }}
                   >
                     <Check size={12} /> Save
@@ -162,34 +140,36 @@ export function LeadsTab() {
               /* view mode */
               <div className="flex items-start justify-between p-3 gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white leading-tight truncate">
-                    {lead.name || <span className="text-[#555] italic">No name</span>}
+                  <p className="text-sm font-semibold text-[var(--text)] leading-tight truncate">
+                    {lead.name || <span className="text-[var(--text-muted)] italic">No name</span>}
                   </p>
-                  <p className="text-[11px] text-[#777] mt-0.5 truncate">{lead.agency}</p>
+                  <p className="text-[11px] text-[var(--text-dim)] mt-0.5 truncate">{lead.agency}</p>
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
-                    {lead.phone && <span className="text-[10px] text-[#666]">{lead.phone}</span>}
-                    {lead.email && <span className="text-[10px] text-[#666] truncate">{lead.email}</span>}
+                    {lead.phone && <span className="text-[10px] text-[var(--text-muted)]">{lead.phone}</span>}
+                    {lead.email && <span className="text-[10px] text-[var(--text-muted)] truncate">{lead.email}</span>}
                   </div>
                   <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[9px] text-[#444]">📍 {lead.location}</span>
-                    <span className="text-[9px] text-[#444]">· 👤 {lead.agent}</span>
-                    <span className="text-[9px] text-[#333]">· {fmtDate(lead.capturedAt)}</span>
+                    <span className="text-[9px] text-[var(--text-muted)]">📍 {lead.location}</span>
+                    <span className="text-[9px] text-[var(--text-muted)]">· 👤 {lead.agent}</span>
+                    <span className="text-[9px] text-[var(--text-dim)]">· {fmtDate(lead.capturedAt)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button
                     onClick={() => startEdit(lead)}
+                    aria-label={`Edit lead${lead.name ? `: ${lead.name}` : ''}`}
                     className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                    style={{ background: 'rgba(255,255,255,0.06)' }}
+                    style={{ background: 'rgba(var(--ink),0.06)' }}
                   >
-                    <Pencil size={12} className="text-[#888]" />
+                    <Pencil size={12} className="text-[var(--text-dim)]" aria-hidden="true" />
                   </button>
                   <button
                     onClick={() => deleteLead(lead.id)}
+                    aria-label={`Delete lead${lead.name ? `: ${lead.name}` : ''}`}
                     className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
                     style={{ background: 'rgba(227,38,54,0.1)' }}
                   >
-                    <Trash2 size={12} className="text-[#E32636]" />
+                    <Trash2 size={12} className="text-[#E32636]" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -202,8 +182,8 @@ export function LeadsTab() {
       {!confirmClear ? (
         <button
           onClick={() => setConfirmClear(true)}
-          className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs text-[#555] cursor-pointer transition-colors mt-1"
-          style={{ border: '1px solid rgba(255,255,255,0.05)' }}
+          className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs text-[var(--text-muted)] cursor-pointer transition-colors mt-1"
+          style={{ border: '1px solid rgba(var(--ink),0.05)' }}
         >
           <Trash2 size={11} /> Clear all leads
         </button>
@@ -214,19 +194,19 @@ export function LeadsTab() {
         >
           <div className="flex items-center gap-2">
             <AlertTriangle size={14} className="text-[#E32636]" />
-            <span className="text-xs text-white">Delete all {leads.length} leads?</span>
+            <span className="text-xs text-[var(--text)]">Delete all {leads.length} leads?</span>
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setConfirmClear(false)}
-              className="px-3 py-1 rounded-lg text-xs text-[#888] cursor-pointer"
-              style={{ background: 'rgba(255,255,255,0.07)' }}
+              className="px-3 py-1 rounded-lg text-xs text-[var(--text-dim)] cursor-pointer"
+              style={{ background: 'rgba(var(--ink),0.07)' }}
             >
               Cancel
             </button>
             <button
               onClick={() => { clearLeads(); setConfirmClear(false); }}
-              className="px-3 py-1 rounded-lg text-xs font-bold text-white cursor-pointer"
+              className="px-3 py-1 rounded-lg text-xs font-bold text-[var(--text)] cursor-pointer"
               style={{ background: '#E32636' }}
             >
               Delete All
