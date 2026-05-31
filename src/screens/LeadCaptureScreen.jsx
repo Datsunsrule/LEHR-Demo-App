@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, Settings } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useStore } from '../store/useStore';
+import { useTheme } from '../hooks/useTheme';
 import { LehrLogo } from '../components/LehrLogo';
 import { GlassCard } from '../components/GlassCard';
 import { InputField } from '../components/InputField';
@@ -14,6 +15,7 @@ import { formatPhone } from '../hooks/useFormValidation';
 
 export function LeadCaptureScreen() {
   const navigate      = useNavigate();
+  const { resolved }  = useTheme();
   const [adminOpen, setAdminOpen] = useState(false);
   const [skipForm, setSkipForm]   = useState(false);
 
@@ -187,8 +189,8 @@ export function LeadCaptureScreen() {
             {/* speech bubble */}
             <div className="relative max-w-[200px] mt-2">
               <div
-                className="rounded-2xl px-3.5 py-2.5 text-[11px] leading-relaxed font-semibold text-white"
-                style={{ background: '#E32636', boxShadow: '0 4px 16px rgba(227,38,54,0.4)' }}
+                className="rounded-2xl px-3.5 py-2.5 text-[11px] leading-relaxed font-medium text-[var(--text-muted)]"
+                style={{ background: 'rgba(var(--ink),0.08)', border: '1px solid rgba(var(--ink),0.14)', backdropFilter: 'blur(8px)' }}
               >
                 Review on the go — just scan with your phone to explore LEHR anytime.
               </div>
@@ -199,7 +201,7 @@ export function LeadCaptureScreen() {
                   width: 0, height: 0,
                   borderTop: '7px solid transparent',
                   borderBottom: '7px solid transparent',
-                  borderLeft: '10px solid #E32636',
+                  borderLeft: '10px solid rgba(var(--ink),0.12)',
                 }}
               />
             </div>
@@ -211,7 +213,7 @@ export function LeadCaptureScreen() {
                   value="https://www.lehr.com"
                   size={90}
                   bgColor="transparent"
-                  fgColor="#ffffff"
+                  fgColor={resolved === 'light' ? '#000000' : '#ffffff'}
                   level="M"
                 />
               </a>
